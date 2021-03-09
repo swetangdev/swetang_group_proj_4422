@@ -146,14 +146,14 @@ def get_a_l_r(goal):
     if last_rotation > math.pi - 0.1 and rotation <= 0:
         rotation = 2 * math.pi + rotation
     elif last_rotation < -math.pi + 0.1 and rotation > 0:
-        rotation = -2 * math.pi + rotation
+        rotation = 2 * math.pi + rotation
 
     # find angular velocity using proportional control
     angular_velocity = k_v_gain * angle_to_goal-rotation
 
     # find linear velocity using proportional control
     distance_to_goal = compute_distance(position.x, position.y, goal_x, goal_y)
-    linear_velocity = min(k_h_gain * distance_to_goal, 0.14)+0.15
+    linear_velocity = min(k_h_gain * distance_to_goal, 0.14)+0.3
 
     # upper limit on max angular velocity
     if angular_velocity > 0:
@@ -164,8 +164,7 @@ def get_a_l_r(goal):
     return angular_velocity, linear_velocity, rotation 
 
 # path way points for turtlebot 
-#Box-1, Box-2, White Box, Left Black Box, Box 4, Home
-waypoints = [(3.60,5.60), (4.2, -3.80),(-3 -3.54), (0.65, 4.08), (2.34, 0.20), (0.02, 0.02)]
+waypoints = [(3.75,5.55), (4,-2),(-3.29,-3), (-1.75,5.40)]
 
 # initialize global variables
 goal_index = 0
@@ -185,8 +184,8 @@ def sensor_callback(msg):
     global left_90
     global right_90
     front = msg.ranges[0]
-    left_15 = msg.ranges[40]
-    right_15 = msg.ranges[320]
+    left_15 = msg.ranges[30]
+    right_15 = msg.ranges[330]
     left_90 = msg.ranges[90]
     right_90 = msg.ranges[270]
 
@@ -206,12 +205,10 @@ def choose():
 	rospy.loginfo("|-------------------------------|")
 	rospy.loginfo("|PRESSE A KEY:")
 	rospy.loginfo("|'0': Box 1 ")
-	rospy.loginfo("|'1': Box2 ")
-	rospy.loginfo("|'2': White Box ")
-	rospy.loginfo("|'3': Left Black Box ")
-	rospy.loginfo("|'4': Box 4 ")
-	rospy.loginfo("|'5': Home ")
-	rospy.loginfo("|'6': Quit ")
+	rospy.loginfo("|'1': Box Near Box2 ")
+	rospy.loginfo("|'2': White Box on right side of Box3")
+	rospy.loginfo("|'3': Black Box on left side of Box3 ")
+	rospy.loginfo("|'4': Quit ")
 	rospy.loginfo("|-------------------------------|")
 	rospy.loginfo("|WHERE TO GO?")
 	choice = input()
@@ -242,7 +239,7 @@ while not rospy.is_shutdown():
         #choice = choose()
    
 
-    if choice >= 0 and choice < 6:
+    if choice >= 0 and choice <4:
         # if no obstacle -- go to goal
         if front > forwardThresh and left_15 > sideThresh and right_15 > sideThresh:
             # break if all goals have been reached
@@ -269,18 +266,17 @@ while not rospy.is_shutdown():
                 rospy.loginfo("Front Right")
                 velocity_msg.angular.z = 1.5
                 velocity_msg.linear.x = 0.0
-            else:
-                velocity_msg.angular.z = 0.0
-                velocity_msg.linear.x = 0.3
-            """elif left_90 < sideThresh:
+            elif left_90 < sideThresh:
                 rospy.loginfo('Front 90 Left')
                 velocity_msg.angular.z = -1.5
                 velocity_msg.linear.x = 0.0
             elif right_90 < sideThresh:
                 rospy.loginfo("Front 90 Right")
                 velocity_msg.angular.z = 1.5
-                velocity_msg.linear.x = 0.0"""
-
+                velocity_msg.linear.x = 0.0
+            #else:
+                #velocity_msg.angular.z = 0.0
+                #velocity_msg.linear.x = 1.5
         
         if front < forwardThresh:
             velocity_msg.angular.z = 1.5
@@ -289,9 +285,9 @@ while not rospy.is_shutdown():
         # publish velocity
         pub.publish(velocity_msg)
         rate.sleep()
-    elif choice == 6:
+    elif choice == 4:
         shutdown()
-    elif choice < 0 and choice > 6:
+    elif choice < 0 and choice > 4:
         rospy.loginfo("Please select from available options")
         choice = choose()
         goalReached = False
